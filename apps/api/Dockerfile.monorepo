@@ -1,0 +1,50 @@
+# Dockerfile otimizado para monorepo
+FROM node:18-slim AS base
+
+# Instalar dependências necessárias
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copiar arquivos de configuração do monorepo
+COPY package*.json ./
+COPY .npmrc ./
+COPY turbo.json ./
+
+# Copiar packages
+COPY packages/ ./packages/
+
+# Instalar dependências do monorepo
+RUN npm ci --only=production
+
+# Copiar código da API
+COPY apps/api/ ./apps/api/
+
+# Navegar para a pasta da API
+WORKDIR /app/apps/api
+
+# Instalar dependências específicas da API
+RUN npm ci --only=production
+
+# Build da aplicação
+RUN npm run build
+
+# Stage de produção
+FROM node:18-slim AS production
+
+WORKDIR /app
+
+# Copiar apenas os arquivos necessários
+COPY --from=base /app/package*.json ./
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/packages ./packages
+COPY --from=base /app/apps/api/dist ./apps/api/dist
+COPY --from=base /app/apps/api/package*.json ./apps/api/
+
+WORKDIR /app/apps/api
+
+EXPOSE 3000
+
+CMD ["node", "dist/server.js"] 

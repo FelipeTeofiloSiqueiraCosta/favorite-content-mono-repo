@@ -1,11 +1,19 @@
-dist
-
 node_modules
+npm-debug.log
+dist
+.env
+.env.local
+.env.production
+.git
+.gitignore
+README.md
+.DS_Store
+*.log
+coverage
+.nyc_output
+.vscode
+.idea
 
 Dockerfile
-
-.git
-
-.gitignore
 
 .dockerignore
